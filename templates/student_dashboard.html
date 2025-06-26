@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>Student Dashboard</h2>
+<h3>Assignments</h3>
+<ul>
+{% for a in assignments %}
+    <li>{{ a.title }} - Due: {{ a.deadline.strftime('%Y-%m-%d') }}
+        <form method="POST" action="{{ url_for('main.submit_score', assignment_id=a.id) }}">
+            Your Score: <input name="score" type="number" min="0" max="{{ a.max_score }}">
+            <button type="submit">Submit</button>
+        </form>
+    </li>
+{% endfor %}
+{% endblock %}

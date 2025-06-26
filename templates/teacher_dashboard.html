@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>Teacher Dashboard</h2>
+<h3>Students</h3>
+<ul>
+{% for s in students %}
+    <li>{{ s.name }} - <a href="{{ url_for('main.delete_student', student_id=s.id) }}">Delete</a></li>
+{% endfor %}
+</ul>
+<h3>Add Student</h3>
+<form method="POST" action="{{ url_for('main.add_student') }}">
+    Name: <input name="name"><br>
+    Email: <input name="email"><br>
+    Password: <input name="password"><br>
+    <button type="submit">Add</button>
+</form>
+<h3>Create Assignment</h3>
+<form method="POST" action="{{ url_for('main.create_assignment') }}">
+    Title: <input name="title"><br>
+    Topic: <input name="topic"><br>
+    Max Score: <input name="max_score"><br>
+    Deadline (YYYY-MM-DD): <input name="deadline"><br>
+    <button type="submit">Create</button>
+</form>
+{% endblock %}
