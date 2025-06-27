@@ -1,0 +1,17 @@
+<!-- templates/students.html -->
+<h2>Студенты</h2>
+
+<h3>Добавить студента</h3>
+<form method="POST">
+    Имя: <input type="text" name="name"><br>
+    Email: <input type="email" name="email"><br>
+    Пароль: <input type="password" name="password"><br>
+    <button type="submit">Добавить</button>
+</form>
+
+<h3>Список студентов</h3>
+<ul>
+{% for s in students %}
+    <li>{{ s.name }} — {{ s.email }}</li>
+{% endfor %}
+</ul>
