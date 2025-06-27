@@ -1,14 +1,74 @@
-{% extends 'base.html' %}
-{% block content %}
-<h2>Student Dashboard</h2>
-<h3>Assignments</h3>
-<ul>
-{% for a in assignments %}
-    <li>{{ a.title }} - Due: {{ a.deadline.strftime('%Y-%m-%d') }}
-        <form method="POST" action="{{ url_for('main.submit_score', assignment_id=a.id) }}">
-            Your Score: <input name="score" type="number" min="0" max="{{ a.max_score }}">
-            <button type="submit">Submit</button>
-        </form>
-    </li>
-{% endfor %}
-{% endblock %}
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Dashboard</title>
+    <link rel="stylesheet" href="../static/style.css">
+</head>
+<body>
+    <header class="header">
+        <nav class="navbar">
+            <div class="nav-left">
+                <a href="{{ url_for('main.dashboard') }}" class="logo">Dashboard</a>
+                <button class="nav-btn tasks-btn">Мои задания</button>
+                <a href="{{ url_for('main.statistics') }}" class="nav-btn stats-btn">Статистика</a>
+            </div>
+            <div class="nav-right">
+                <div class="profile-dropdown">
+                    <button class="nav-btn profile-btn">{{ current_user.name }}</button>
+                    <div class="dropdown-content">
+                        <a href="{{ url_for('main.profile') }}" class="dropdown-item">Настройки</a>
+                        <a href="{{ url_for('main.logout') }}" class="dropdown-item">Выход</a>
+                    </div>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <main>
+        <h1>Добро пожаловать, {{ current_user.name }}!</h1>
+        
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                <div class="flashes">
+                    {% for message in messages %}
+                        <div class="flash">{{ message }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        <!-- Студенческий контент -->
+        <div class="student-content">
+            <h2>Мои задания</h2>
+            <ul>
+                {% for assignment in assignments %}
+                    <li>
+                        {{ assignment.title }} - {{ assignment.topic }}
+                        {% for score in scores if score.assignment_id == assignment.id %}
+                            (Оценка: {{ score.score }}/{{ assignment.max_score }})
+                        {% endfor %}
+                    </li>
+                {% endfor %}
+            </ul>
+        </div>
+    </main>
+
+    <script>
+        document.querySelector('.profile-btn').addEventListener('click', function(e) {
+            e.preventDefault();
+            document.querySelector('.dropdown-content').classList.toggle('show');
+        });
+
+        window.onclick = function(e) {
+            if (!e.target.matches('.profile-btn')) {
+                var dropdowns = document.querySelectorAll('.dropdown-content.show');
+                dropdowns.forEach(function(dropdown) {
+                    dropdown.classList.remove('show');
+                });
+            }
+        }
+    </script>
+</body>
+</html>
