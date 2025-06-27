@@ -1,14 +1,55 @@
-{% extends 'base.html' %}
-{% block content %}
-<form method="POST">
-    Name: <input type="text" name="name"><br>
-    Email: <input type="email" name="email"><br>
-    Password: <input type="password" name="password"><br>
-    Role: 
-    <select name="role">
-        <option value="student">Student</option>
-        <option value="teacher">Teacher</option>
-    </select><br>
-    <button type="submit">Register</button>
-</form>
-{% endblock %}
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Регистрация</title>
+    <link rel="stylesheet" href="../static/style.css">
+</head>
+<body>
+    <div class="auth-form">
+        <h2>Регистрация</h2>
+        
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                <ul class="flashes">
+                    {% for message in messages %}
+                        <li>{{ message }}</li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+        {% endwith %}
+        
+        <form method="POST">
+            <div class="form-group">
+                <label for="name">Имя:</label>
+                <input type="text" id="name" name="name" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="email">Email:</label>
+                <input type="email" id="email" name="email" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="password">Пароль:</label>
+                <input type="password" id="password" name="password" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="role">Роль:</label>
+                <select id="role" name="role" required>
+                    <option value="student">Ученик</option>
+                    <option value="teacher">Учитель</option>
+                </select>
+            </div>
+            
+            <button type="submit" class="btn btn-block">Зарегистрироваться</button>
+        </form>
+        
+        <div class="auth-switch">
+            Уже есть аккаунт? <a href="{{ url_for('auth.login') }}">Войдите</a>
+        </div>
+    </div>
+</body>
+</html>
