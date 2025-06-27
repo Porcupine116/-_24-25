@@ -8,6 +8,12 @@ class User(UserMixin, db.Model):
     email = db.Column(db.String(150), unique=True)
     password = db.Column(db.String(150))
     role = db.Column(db.String(50))  # 'student' or 'teacher'
+    
+    # Новые поля профиля
+    first_name = db.Column(db.String(150))
+    last_name = db.Column(db.String(150))
+    age = db.Column(db.Integer)
+    gender = db.Column(db.String(10))  # 'male', 'female', 'other'
 
 class Assignment(db.Model):
     id = db.Column(db.Integer, primary_key=True)
