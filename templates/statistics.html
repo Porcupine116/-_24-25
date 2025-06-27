@@ -1,0 +1,30 @@
+<!-- templates/statistics.html -->
+<h2>Статистика</h2>
+
+{% if not scores %}
+<p>Пока статистики нет.</p>
+{% else %}
+
+{% if is_teacher %}
+    <table border="1">
+        <tr>
+            <th>Студент</th>
+            <th>Задание</th>
+            <th>Оценка</th>
+        </tr>
+        {% for s in scores %}
+            <tr>
+                <td>{{ s.student.name }}</td>
+                <td>{{ s.assignment.title }}</td>
+                <td>{{ s.score }}</td>
+            </tr>
+        {% endfor %}
+    </table>
+{% else %}
+    <ul>
+    {% for s in scores %}
+        <li>{{ s.assignment.title }} — Оценка: {{ s.score }}</li>
+    {% endfor %}
+    </ul>
+{% endif %}
+
