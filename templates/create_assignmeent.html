@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block title %}Создание задания{% endblock %}
+
+{% block content %}
+<div class="form-container">
+    <h1>Создать новое задание</h1>
+    
+    <form method="POST" class="assignment-form">
+        <div class="form-group">
+            <label for="title">Название задания:</label>
+            <input type="text" id="title" name="title" required class="form-input">
+        </div>
+        
+        <div class="form-group">
+            <label for="description">Описание:</label>
+            <textarea id="description" name="description" required class="form-textarea"></textarea>
+        </div>
+        
+        <div class="form-row">
+            <div class="form-group">
+                <label for="deadline">Срок сдачи:</label>
+                <input type="datetime-local" id="deadline" name="deadline" class="form-input">
+            </div>
+            
+            <div class="form-group">
+                <label for="max_score">Максимальный балл:</label>
+                <input type="number" id="max_score" name="max_score" min="1" value="10" required class="form-input">
+            </div>
+        </div>
+        
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Создать задание</button>
+            <a href="{{ url_for('main.dashboard') }}" class="btn btn-secondary">Отмена</a>
+        </div>
+    </form>
+</div>
+{% endblock %}
