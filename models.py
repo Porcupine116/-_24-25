@@ -16,12 +16,23 @@ class User(UserMixin, db.Model):
     gender = db.Column(db.String(10))  # 'male', 'female', 'other'
 
 class Assignment(db.Model):
+    __tablename__ = 'assignments'
     id = db.Column(db.Integer, primary_key=True)
-    title = db.Column(db.String(200))
-    topic = db.Column(db.String(100))
-    max_score = db.Column(db.Integer)
+    title = db.Column(db.String(100), nullable=False)
+    description = db.Column(db.Text, nullable=False)
     deadline = db.Column(db.DateTime)
-    created_by = db.Column(db.Integer, db.ForeignKey('user.id'))
+    max_score = db.Column(db.Integer, default=10)
+    teacher_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+class Submission(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    student_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    assignment_id = db.Column(db.Integer, db.ForeignKey('assignment.id'))
+    solution_text = db.Column(db.Text)
+    submitted_at = db.Column(db.DateTime, default=datetime.utcnow)
+    score = db.Column(db.Integer)
+    feedback = db.Column(db.Text)
 
 class Score(db.Model):
     id = db.Column(db.Integer, primary_key=True)
