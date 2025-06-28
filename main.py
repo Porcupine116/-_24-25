@@ -7,20 +7,28 @@ from werkzeug.security import generate_password_hash
 
 main = Blueprint('main', __name__)
 
-@main.route('/')
-def index():
-    return redirect(url_for('main.dashboard'))
 
 @main.route('/dashboard')
 @login_required
 def dashboard():
     if current_user.role == 'teacher':
-        students = current_user.students.all()
+        students = current_user.students.order_by(User.name.asc()).all()
         assignments = Assignment.query.filter_by(teacher_id=current_user.id).all()
-        return render_template('teacher_dashboard.html',
-                               students=students,
-                               assignments=assignments,
-                               current_user=current_user)
+
+        # Считаем средний балл для каждого студента
+        avg_scores = {}
+        for student in students:
+            submissions = Submission.query.filter_by(student_id=student.id).all()
+            scores = [s.score for s in submissions if s.score is not None]
+            avg_scores[student.id] = round(sum(scores) / len(scores), 2) if scores else None
+
+        return render_template(
+            'teacher_dashboard.html',
+            students=students,
+            assignments=assignments,
+            current_user=current_user,
+            avg_scores=avg_scores
+        )
     else:
         return redirect(url_for('main.student_dashboard'))
 
@@ -236,30 +244,40 @@ def grade_submission(submission_id):
         flash(f'Ошибка при сохранении оценки: {str(e)}', 'error')
     return redirect(url_for('main.view_submissions', assignment_id=assignment.id))
 
-@main.route('/submit_assignment/<int:assignment_id>', methods=['POST'])
+@main.route('/submit_assignment/<int:assignment_id>', methods=['GET', 'POST'])
 @login_required
 def submit_assignment(assignment_id):
     if current_user.role != 'student':
         abort(403)
     assignment = Assignment.query.get_or_404(assignment_id)
-    solution_text = request.form.get('solution_text', '')
-    if not solution_text:
-        flash('Решение не может быть пустым', 'error')
-        return redirect(url_for('main.dashboard'))
-    try:
+
+    if request.method == 'POST':
+        # Проверяем, на все ли вопросы даны ответы
+        answers = []
+        for question in assignment.questions:
+            selected_option_id = request.form.get(f'question_{question.id}')
+            if not selected_option_id:
+                flash('Необходимо ответить на все вопросы.', 'error')
+                return redirect(url_for('main.submit_assignment', assignment_id=assignment.id))
+            answers.append(int(selected_option_id))
+
+        # Создаем Submission
         submission = Submission(
             student_id=current_user.id,
             assignment_id=assignment.id,
-            solution_text=solution_text,
+            solution_text=", ".join(map(str, answers)),  # Можно и по-другому, как нужно
             submitted_at=datetime.utcnow()
         )
         db.session.add(submission)
         db.session.commit()
         flash('Решение успешно отправлено', 'success')
-    except Exception as e:
-        db.session.rollback()
-        flash(f'Ошибка при отправке решения: {str(e)}', 'error')
-    return redirect(url_for('main.dashboard'))
+        return redirect(url_for('main.student_dashboard'))
+
+    return render_template(
+        'submit_assignment.html',
+        assignment=assignment,
+        current_user=current_user
+    )
 
 @main.route('/profile', methods=['GET', 'POST'])
 @login_required
@@ -286,7 +304,7 @@ def profile():
 @login_required
 def statistics():
     if current_user.role == 'teacher':
-        students = User.query.filter_by(role='student').all()
+        students = current_user.students.all()
         assignments = Assignment.query.all()
         submissions = Submission.query.all()
         student_stats = []
