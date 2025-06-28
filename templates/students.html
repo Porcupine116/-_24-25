@@ -1,17 +1,85 @@
-<!-- templates/students.html -->
-<h2>Студенты</h2>
+{% extends "base.html" %}
 
-<h3>Добавить студента</h3>
-<form method="POST">
-    Имя: <input type="text" name="name"><br>
-    Email: <input type="email" name="email"><br>
-    Пароль: <input type="password" name="password"><br>
-    <button type="submit">Добавить</button>
-</form>
+{% block title %}Управление студентами{% endblock %}
 
-<h3>Список студентов</h3>
-<ul>
-{% for s in students %}
-    <li>{{ s.name }} — {{ s.email }}</li>
-{% endfor %}
-</ul>
+{% block content %}
+<div class="students-management-container">
+    <h1 class="page-title">Управление студентами</h1>
+    
+    {% with messages = get_flashed_messages() %}
+        {% if messages %}
+        <div class="flashes">
+            {% for message in messages %}
+            <div class="flash">{{ message }}</div>
+            {% endfor %}
+        </div>
+        {% endif %}
+    {% endwith %}
+
+    <div class="add-student-section">
+        <h2 class="section-title">Добавить нового студента</h2>
+        <form method="POST" class="student-form">
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="name">Имя:</label>
+                    <input type="text" id="name" name="name" required class="form-input">
+                </div>
+                <div class="form-group">
+                    <label for="email">Email:</label>
+                    <input type="email" id="email" name="email" required class="form-input">
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="password">Пароль:</label>
+                    <input type="password" id="password" name="password" required class="form-input">
+                    <small class="form-hint">Минимум 6 символов</small>
+                </div>
+            </div>
+            
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">Добавить студента</button>
+            </div>
+        </form>
+    </div>
+
+    <div class="students-list-section">
+        <h2 class="section-title">Список студентов</h2>
+        
+        {% if students %}
+        <div class="students-table-container">
+            <table class="students-table">
+                <thead>
+                    <tr>
+                        <th>Имя</th>
+                        <th>Email</th>
+                        <th>Дата регистрации</th>
+                        <th>Действия</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for student in students %}
+                    <tr>
+                        <td>{{ student.name }}</td>
+                        <td>{{ student.email }}</td>
+                        <td>{{ student.created_at.strftime('%d.%m.%Y') if student.created_at else 'Н/Д' }}</td>
+                        <td class="actions-cell">
+                            <form method="POST" action="{{ url_for('main.delete_student', student_id=student.id) }}" 
+                                  onsubmit="return confirm('Вы уверены, что хотите удалить этого студента?');">
+                                <button type="submit" class="btn btn-danger btn-small">Удалить</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="no-students">
+            <p>Нет зарегистрированных студентов</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
