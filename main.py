@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, abort
 from flask_login import login_required, current_user, logout_user
 from app import db
-from models import User, Assignment, Score, Submission
+from models import User, Assignment, Score, Submission, Question, AnswerOption
 from datetime import datetime
 from werkzeug.security import generate_password_hash
 
@@ -111,27 +111,53 @@ def delete_student(student_id):
 @main.route('/assignments/create', methods=['GET', 'POST'])
 @login_required
 def create_assignment():
-    """Создание нового задания"""
     if current_user.role != 'teacher':
         abort(403)
-    
+
     if request.method == 'POST':
         try:
+            title = request.form['title']
+            description = request.form['description']
+            deadline_str = request.form.get('deadline')
+            deadline = datetime.strptime(deadline_str, '%Y-%m-%dT%H:%M') if deadline_str else None
+            max_score = int(request.form['max_score'])
+
             assignment = Assignment(
-                title=request.form['title'],
-                description=request.form.get('description', ''),
-                deadline=datetime.strptime(request.form['deadline'], '%Y-%m-%dT%H:%M') if request.form['deadline'] else None,
-                max_score=int(request.form['max_score']),
+                title=title,
+                description=description,
+                deadline=deadline,
+                max_score=max_score,
                 teacher_id=current_user.id
             )
+
             db.session.add(assignment)
+            db.session.flush()  # сохраняем, чтобы получить assignment.id
+
+            questions = request.form.getlist('question_text[]')
+            for idx, q_text in enumerate(questions):
+                question = Question(text=q_text, assignment_id=assignment.id)
+                db.session.add(question)
+                db.session.flush()
+
+                options = request.form.getlist(f'answer_option_{idx+1}[]')
+                correct_option = request.form.get(f'correct_option_{idx+1}')
+
+                for opt_idx, opt_text in enumerate(options):
+                    answer_option = AnswerOption(
+                        text=opt_text,
+                        is_correct=(str(opt_idx) == correct_option),
+                        question_id=question.id
+                    )
+                    db.session.add(answer_option)
+
             db.session.commit()
             flash('Задание успешно создано', 'success')
             return redirect(url_for('main.dashboard'))
+
         except Exception as e:
             db.session.rollback()
             flash(f'Ошибка при создании задания: {str(e)}', 'error')
-    
+
     return render_template('create_assignment.html')
 
 @main.route('/assignments/<int:assignment_id>/edit', methods=['GET', 'POST'])
@@ -292,3 +318,11 @@ def logout():
     logout_user()
     flash('Вы успешно вышли из системы', 'success')
     return redirect(url_for('auth.login'))
+
+@main.route('/assignments')
+@login_required
+def assignments_list():
+    if current_user.role != 'teacher':
+        abort(403)
+    assignments = Assignment.query.filter_by(teacher_id=current_user.id).order_by(Assignment.created_at.desc()).all()
+    return render_template('assignments.html', assignments=assignments)

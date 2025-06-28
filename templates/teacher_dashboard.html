@@ -10,11 +10,10 @@
     <header class="header">
         <nav class="navbar">
             <div class="nav-left">
-                <a href="{{ url_for('main.dashboard') }}" class="logo">Dashboard</a>
-                <button class="nav-btn tasks-btn">Задания</button>
+                <a href="{{ url_for('main.dashboard') }}" class="logo">Главное меню</a>
+                <a href="{{ url_for('main.assignments_list') }}" class="nav-btn tasks-btn">Задания</a>
                 <a href="{{ url_for('main.statistics') }}" class="nav-btn stats-btn">Статистика</a>
-                <a href="{{ url_for('main.students') }}" class="nav-btn">Студенты</a> <!-- Новая кнопка -->
-
+                <a href="{{ url_for('main.students') }}" class="nav-btn">Студенты</a>
             </div>
             <div class="nav-right">
                 <div class="profile-dropdown">
@@ -30,7 +29,7 @@
 
     <main>
         <h1>Добро пожаловать, {{ current_user.name }}!</h1>
-        
+
         {% with messages = get_flashed_messages() %}
             {% if messages %}
                 <div class="flashes">
@@ -42,6 +41,7 @@
         {% endwith %}
 
         <div class="teacher-content">
+
             <!-- Добавление студентов -->
             <div class="add-student-section">
                 <h2>Добавить студента</h2>
@@ -50,17 +50,14 @@
                         <label>Имя:</label>
                         <input type="text" name="name" required>
                     </div>
-                    
                     <div class="form-group">
                         <label>Email:</label>
                         <input type="email" name="email" required>
                     </div>
-                    
                     <div class="form-group">
                         <label>Пароль:</label>
                         <input type="password" name="password" required>
                     </div>
-                    
                     <button type="submit" class="btn">Добавить студента</button>
                 </form>
             </div>
@@ -82,20 +79,26 @@
 
             <!-- Задания -->
             <div class="assignments-section">
-                <h2>Мои задания</h2>
-                <a href="{{ url_for('main.create_assignment') }}" class="btn">Создать задание</a>
-                
-                <div class="assignments-list">
+                <div class="section-header" onclick="toggleDashboardAssignments()" style="cursor: pointer;">
+                    <h2 style="display: inline-block;">Мои задания</h2>
+                    <span id="arrow" style="font-size: 1.2rem; margin-left: 10px;">⬇️</span>
+                </div>
+
+                <div id="dashboardAssignments" class="assignments-list mt-2" style="display: block;">
                     {% for assignment in assignments %}
                     <div class="assignment-card">
-                        <h3>{{ assignment.title }}</h3>
-                        <p>{{ assignment.description }}</p>
-                        <p>Тема: {{ assignment.topic }}</p>
-                        <p>Срок: {{ assignment.deadline.strftime('%d.%m.%Y %H:%M') if assignment.deadline else 'Нет срока' }}</p>
-                        <p>Макс. балл: {{ assignment.max_score }}</p>
+                        <div class="card-header">
+                            <h3>{{ assignment.title }}</h3>
+                            <span class="score-label">макс: {{ assignment.max_score }} баллов</span>
+                        </div>
+                        <p class="assignment-description">{{ assignment.description }}</p>
+                        <div class="assignment-meta">
+                            <span class="deadline">📅 {{ assignment.deadline.strftime('%d.%m.%Y %H:%M') if assignment.deadline else 'Без срока' }}</span>
+                            <span class="created-at">🕒 {{ assignment.created_at.strftime('%d.%m.%Y') }}</span>
+                        </div>
                         <div class="assignment-actions">
-                            <a href="{{ url_for('main.view_submissions', assignment_id=assignment.id) }}" class="btn-small">Работы</a>
-                            <a href="{{ url_for('main.edit_assignment', assignment_id=assignment.id) }}" class="btn-small">Редактировать</a>
+                            <a href="{{ url_for('main.view_submissions', assignment_id=assignment.id) }}" class="btn btn-small">Работы</a>
+                            <a href="{{ url_for('main.edit_assignment', assignment_id=assignment.id) }}" class="btn btn-small btn-primary">Редактировать</a>
                         </div>
                     </div>
                     {% endfor %}
@@ -105,6 +108,7 @@
     </main>
 
     <script>
+        // Профиль
         document.querySelector('.profile-btn').addEventListener('click', function(e) {
             e.preventDefault();
             document.querySelector('.dropdown-content').classList.toggle('show');
@@ -116,6 +120,20 @@
                 dropdowns.forEach(function(dropdown) {
                     dropdown.classList.remove('show');
                 });
+            }
+        };
+
+        // Сворачивание заданий
+        function toggleDashboardAssignments() {
+            const section = document.getElementById('dashboardAssignments');
+            const arrow = document.getElementById('arrow');
+
+            if (!section.style.display || section.style.display === 'block') {
+                section.style.display = 'none';
+                arrow.textContent = '⬆️';
+            } else {
+                section.style.display = 'block';
+                arrow.textContent = '⬇️';
             }
         }
     </script>

@@ -16,7 +16,6 @@ class User(UserMixin, db.Model):
     gender = db.Column(db.String(10))  # 'male', 'female', 'other'
 
 class Assignment(db.Model):
-    __tablename__ = 'assignments'
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(100), nullable=False)
     description = db.Column(db.Text, nullable=False)
@@ -40,3 +39,18 @@ class Score(db.Model):
     assignment_id = db.Column(db.Integer, db.ForeignKey('assignment.id'))
     score = db.Column(db.Integer)
     submitted_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+class Question(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    assignment_id = db.Column(db.Integer, db.ForeignKey('assignment.id'), nullable=False)
+    text = db.Column(db.Text, nullable=False)
+
+    assignment = db.relationship('Assignment', backref=db.backref('questions', cascade='all, delete-orphan', lazy=True))
+
+class AnswerOption(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    question_id = db.Column(db.Integer, db.ForeignKey('question.id'), nullable=False)
+    text = db.Column(db.String(255), nullable=False)
+    is_correct = db.Column(db.Boolean, default=False)
+
+    question = db.relationship('Question', backref=db.backref('options', cascade='all, delete-orphan', lazy=True))
