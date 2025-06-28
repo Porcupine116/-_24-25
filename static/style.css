@@ -406,3 +406,112 @@ body {
     display: flex;
     gap: 10px;
 }
+
+/* ===================== */
+/* КАРТОЧКИ АВТОРИЗАЦИИ */
+/* ===================== */
+.auth-form {
+  max-width: 400px;
+  width: 100%;
+  margin: 60px auto 0 auto;
+  padding: 36px 32px 28px 32px;  /* Чуть больше паддинг для симметрии */
+  background: white;
+  border-radius: 18px;
+  box-shadow: 0 4px 30px rgba(60,70,110,0.13);
+  box-sizing: border-box; /* Защита от переполнения паддингом */
+}
+
+.auth-form h2 {
+  text-align: center;
+  margin-bottom: 1.5rem;
+  color: var(--primary-color);
+  font-size: 2rem;
+  letter-spacing: 0.03em;
+}
+
+/* Гарантия для всех инпутов внутри .auth-form */
+.auth-form .form-group input,
+.auth-form .form-group select {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px 14px;
+  border-radius: 7px;
+  background: #f7f9fb;
+  border: 1px solid #d7e0ea;
+  font-size: 1rem;
+}
+
+.form-group {
+  margin-bottom: 1.2rem;
+}
+.form-group label {
+  display: block;
+  margin-bottom: 0.4rem;
+  font-weight: 600;
+  color: #394867;
+  font-size: 1rem;
+}
+.form-group input, .form-group select {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid #d7e0ea;
+  border-radius: 7px;
+  background: #f7f9fb;
+  font-size: 1rem;
+  transition: border 0.3s, box-shadow 0.3s;
+}
+.form-group input:focus, .form-group select:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px rgba(76,175,80,0.08);
+  outline: none;
+  background: #fff;
+}
+.btn-block {
+  width: 100%;
+  padding: 13px 0;
+  background-color: var(--primary-color);
+  color: #fff;
+  border: none;
+  border-radius: 7px;
+  font-size: 1.15rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 10px;
+  box-shadow: 0 2px 8px rgba(76,175,80,0.10);
+  transition: background 0.2s;
+}
+.btn-block:hover {
+  background-color: var(--primary-hover);
+}
+.auth-switch {
+  text-align: center;
+  margin-top: 1.6rem;
+  color: #7d889d;
+  font-size: 1rem;
+}
+.auth-switch a {
+  color: var(--primary-color);
+  font-weight: 600;
+  text-decoration: none;
+  margin-left: 4px;
+}
+.flashes {
+  margin-bottom: 1.3rem;
+  padding: 0;
+  list-style: none;
+}
+.flashes li {
+  background: #f8d7da;
+  color: #a94442;
+  padding: 10px 14px;
+  border-radius: 5px;
+  margin-bottom: 6px;
+  font-size: 0.97rem;
+  border: 1px solid #f5c6cb;
+}
+@media (max-width: 500px) {
+  .auth-form {
+    padding: 22px 8px 18px 8px;
+    max-width: 98vw;
+  }
+}

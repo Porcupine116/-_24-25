@@ -8,8 +8,9 @@ class User(UserMixin, db.Model):
     email = db.Column(db.String(150), unique=True)
     password = db.Column(db.String(150))
     role = db.Column(db.String(50))  # 'student' or 'teacher'
-    
-    # Новые поля профиля
+    group = db.Column(db.String(50))  # группа ученика
+
+    # Новые поля профиля (если используешь)
     first_name = db.Column(db.String(150))
     last_name = db.Column(db.String(150))
     age = db.Column(db.Integer)

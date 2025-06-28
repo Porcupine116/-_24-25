@@ -109,7 +109,7 @@
                                 <tr>
                                     <td>{{ student.name }}</td>
                                     <td>{{ student.email }}</td>
-                                    <td>—</td>
+                                    <td>{{ student.group }}</td>
                                     <td>—</td>
                                     <td>
                                         <form method="POST" action="{{ url_for('main.delete_student', student_id=student.id) }}" onsubmit="return confirm('Удалить?')">

@@ -286,23 +286,79 @@ def profile():
 @main.route('/statistics')
 @login_required
 def statistics():
-    """Просмотр статистики"""
-    if current_user.role == 'student':
-        scores = Score.query.filter_by(student_id=current_user.id).all()
-        assignments = Assignment.query.all()
-        return render_template('statistics_student.html',
-                             scores=scores,
-                             assignments=assignments,
-                             current_user=current_user)
-    else:
-        students = User.query.filter_by(role='student').all()
-        scores = Score.query.all()
-        assignments = Assignment.query.all()
-        return render_template('statistics_teacher.html',
-                             students=students,
-                             scores=scores,
-                             assignments=assignments,
-                             current_user=current_user)
+    if current_user.role != 'teacher':
+        abort(403)
+
+    students = User.query.filter_by(role='student').all()
+    assignments = Assignment.query.all()
+    submissions = Submission.query.all()
+
+    # Список для таблицы
+    student_stats = []
+    for student in students:
+        student_subs = [s for s in submissions if s.student_id == student.id]
+        scores = [s.score for s in student_subs if s.score is not None]
+        avg_score = round(sum(scores) / len(scores), 2) if scores else 0
+
+        total_assignments = len(assignments)
+        completed = len([s for s in student_subs if s.solution_text and s.score is not None])
+        not_completed = total_assignments - completed
+        late = len([s for s in student_subs if s.submitted_at and any(a.id == s.assignment_id and a.deadline and s.submitted_at > a.deadline for a in assignments)])
+
+        last_submission = max(student_subs, key=lambda x: x.submitted_at, default=None)
+        last_score = last_submission.score if last_submission and last_submission.score is not None else '—'
+
+        # Сдано с первого раза (если submission у студента по заданию только один)
+        first_try = 0
+        for a in assignments:
+            subs_for_a = [s for s in student_subs if s.assignment_id == a.id]
+            if len(subs_for_a) == 1 and subs_for_a[0].score is not None:
+                first_try += 1
+
+        student_stats.append({
+            'student': student,
+            'avg_score': avg_score,
+            'completed': completed,
+            'not_completed': not_completed,
+            'late': late,
+            'last_score': last_score,
+            'first_try': first_try,
+        })
+
+    # Для диаграмм
+    avg_scores = [s['avg_score'] for s in student_stats]
+    student_names = [s['student'].name for s in student_stats]
+    scores_distribution = [s['last_score'] if isinstance(s['last_score'], (int, float)) else 0 for s in student_stats]
+
+    # Активность по дням (тепловая карта)
+    from collections import Counter
+    import datetime
+    day_counts = Counter(
+        s.submitted_at.date() for s in submissions if s.submitted_at is not None
+    )
+    heatmap_data = []
+    if day_counts:
+        date_from = min(day_counts)
+        date_to = max(day_counts)
+        curr = date_from
+        while curr <= date_to:
+            heatmap_data.append({
+                'date': curr.strftime('%Y-%m-%d'),
+                'count': day_counts.get(curr, 0)
+            })
+            curr += datetime.timedelta(days=1)
+
+    return render_template(
+        'statistics_teacher.html',
+        student_stats=student_stats,
+        student_names=student_names,
+        avg_scores=avg_scores,
+        scores_distribution=scores_distribution,
+        heatmap_data=heatmap_data,
+        assignments=assignments,
+        submissions=submissions
+    )
+
 
 @main.route('/logout')
 @login_required
