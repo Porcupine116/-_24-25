@@ -13,6 +13,8 @@
                 <a href="{{ url_for('main.dashboard') }}" class="logo">Dashboard</a>
                 <button class="nav-btn tasks-btn">Задания</button>
                 <a href="{{ url_for('main.statistics') }}" class="nav-btn stats-btn">Статистика</a>
+                <a href="{{ url_for('main.students') }}" class="nav-btn">Студенты</a> <!-- Новая кнопка -->
+
             </div>
             <div class="nav-right">
                 <div class="profile-dropdown">
@@ -39,21 +41,66 @@
             {% endif %}
         {% endwith %}
 
-        <!-- Учительский контент -->
         <div class="teacher-content">
-            <h2>Список студентов</h2>
-            <ul>
-                {% for student in students %}
-                    <li>{{ student.name }} ({{ student.email }})</li>
-                {% endfor %}
-            </ul>
-            
-            <h2>Задания</h2>
-            <ul>
-                {% for assignment in assignments %}
-                    <li>{{ assignment.title }} - {{ assignment.topic }}</li>
-                {% endfor %}
-            </ul>
+            <!-- Добавление студентов -->
+            <div class="add-student-section">
+                <h2>Добавить студента</h2>
+                <form method="POST" action="{{ url_for('main.add_student') }}">
+                    <div class="form-group">
+                        <label>Имя:</label>
+                        <input type="text" name="name" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Email:</label>
+                        <input type="email" name="email" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Пароль:</label>
+                        <input type="password" name="password" required>
+                    </div>
+                    
+                    <button type="submit" class="btn">Добавить студента</button>
+                </form>
+            </div>
+
+            <!-- Список студентов -->
+            <div class="students-list">
+                <h2>Мои студенты</h2>
+                <ul>
+                    {% for student in students %}
+                    <li>
+                        {{ student.name }} ({{ student.email }})
+                        <form method="POST" action="{{ url_for('main.delete_student', student_id=student.id) }}" onsubmit="return confirm('Удалить этого студента?')">
+                            <button type="submit" class="btn-small">Удалить</button>
+                        </form>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+
+            <!-- Задания -->
+            <div class="assignments-section">
+                <h2>Мои задания</h2>
+                <a href="{{ url_for('main.create_assignment') }}" class="btn">Создать задание</a>
+                
+                <div class="assignments-list">
+                    {% for assignment in assignments %}
+                    <div class="assignment-card">
+                        <h3>{{ assignment.title }}</h3>
+                        <p>{{ assignment.description }}</p>
+                        <p>Тема: {{ assignment.topic }}</p>
+                        <p>Срок: {{ assignment.deadline.strftime('%d.%m.%Y %H:%M') if assignment.deadline else 'Нет срока' }}</p>
+                        <p>Макс. балл: {{ assignment.max_score }}</p>
+                        <div class="assignment-actions">
+                            <a href="{{ url_for('main.view_submissions', assignment_id=assignment.id) }}" class="btn-small">Работы</a>
+                            <a href="{{ url_for('main.edit_assignment', assignment_id=assignment.id) }}" class="btn-small">Редактировать</a>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
         </div>
     </main>
 
