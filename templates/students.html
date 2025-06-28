@@ -1,24 +1,46 @@
 {% extends "base.html" %}
-
-{% block title %}Управление студентами{% endblock %}
+{% block title %}Студенты{% endblock %}
 
 {% block content %}
 <div class="students-management-container">
-    <h1 class="page-title">Управление студентами</h1>
-    
-    {% with messages = get_flashed_messages() %}
-        {% if messages %}
-        <div class="flashes">
-            {% for message in messages %}
-            <div class="flash">{{ message }}</div>
-            {% endfor %}
-        </div>
-        {% endif %}
-    {% endwith %}
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+        <h1 class="page-title">Список студентов</h1>
+        <button class="btn btn-primary" onclick="toggleAddForm()">➕ Добавить студента</button>
+    </div>
 
-    <div class="add-student-section">
-        <h2 class="section-title">Добавить нового студента</h2>
-        <form method="POST" class="student-form">
+    <!-- Фильтры -->
+    <div class="filter-section mt-2">
+        <button class="btn btn-small" onclick="toggleFilters()">🔍 Фильтры</button>
+        <div id="filters" style="display: none; margin-top: 10px;">
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="filter-name">Сортировать по имени:</label>
+                    <select id="filter-name" onchange="sortTableByName()" class="form-input">
+                        <option value="">—</option>
+                        <option value="asc">А → Я</option>
+                        <option value="desc">Я → А</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="filter-score">Сортировать по баллу:</label>
+                    <select id="filter-score" disabled class="form-input">
+                        <option>В разработке...</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="filter-group">Фильтр по группе:</label>
+                    <select id="filter-group" disabled class="form-input">
+                        <option>Скоро...</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Форма добавления -->
+    <div id="addForm" class="add-student-section" style="display: none;">
+        <h2 class="section-title">Добавить студента</h2>
+        <form method="POST" class="student-form" action="{{ url_for('main.add_student') }}">
             <div class="form-row">
                 <div class="form-group">
                     <label for="name">Имя:</label>
@@ -29,57 +51,67 @@
                     <input type="email" id="email" name="email" required class="form-input">
                 </div>
             </div>
-            
-            <div class="form-row">
-                <div class="form-group">
-                    <label for="password">Пароль:</label>
-                    <input type="password" id="password" name="password" required class="form-input">
-                    <small class="form-hint">Минимум 6 символов</small>
-                </div>
-            </div>
-            
+
             <div class="form-actions">
-                <button type="submit" class="btn btn-primary">Добавить студента</button>
+                <button type="submit" class="btn btn-primary">Добавить</button>
             </div>
         </form>
     </div>
 
-    <div class="students-list-section">
-        <h2 class="section-title">Список студентов</h2>
-        
-        {% if students %}
-        <div class="students-table-container">
-            <table class="students-table">
-                <thead>
-                    <tr>
-                        <th>Имя</th>
-                        <th>Email</th>
-                        <th>Дата регистрации</th>
-                        <th>Действия</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for student in students %}
-                    <tr>
-                        <td>{{ student.name }}</td>
-                        <td>{{ student.email }}</td>
-                        <td>{{ student.created_at.strftime('%d.%m.%Y') if student.created_at else 'Н/Д' }}</td>
-                        <td class="actions-cell">
-                            <form method="POST" action="{{ url_for('main.delete_student', student_id=student.id) }}" 
-                                  onsubmit="return confirm('Вы уверены, что хотите удалить этого студента?');">
-                                <button type="submit" class="btn btn-danger btn-small">Удалить</button>
-                            </form>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-        {% else %}
-        <div class="no-students">
-            <p>Нет зарегистрированных студентов</p>
-        </div>
-        {% endif %}
+    <!-- Таблица студентов -->
+    <div class="students-table-container mt-3">
+        <table class="students-table" id="studentsTable">
+            <thead>
+                <tr>
+                    <th>Имя</th>
+                    <th>Email</th>
+                    <th>Группа</th>
+                    <th>Средний балл</th>
+                    <th>Действия</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for student in students %}
+                <tr>
+                    <td>{{ student.name }}</td>
+                    <td>{{ student.email }}</td>
+                    <td>—</td>
+                    <td>—</td>
+                    <td class="actions-cell">
+                        <form method="POST" action="{{ url_for('main.delete_student', student_id=student.id) }}" onsubmit="return confirm('Удалить этого студента?');">
+                            <button type="submit" class="btn btn-danger btn-small">Удалить</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
 </div>
+
+<script>
+    function toggleFilters() {
+        const filters = document.getElementById('filters');
+        filters.style.display = filters.style.display === 'none' ? 'block' : 'none';
+    }
+
+    function toggleAddForm() {
+        const form = document.getElementById('addForm');
+        form.style.display = form.style.display === 'none' ? 'block' : 'none';
+    }
+
+    function sortTableByName() {
+        const table = document.getElementById("studentsTable").getElementsByTagName("tbody")[0];
+        const rows = Array.from(table.rows);
+        const order = document.getElementById("filter-name").value;
+
+        rows.sort((a, b) => {
+            const nameA = a.cells[0].innerText.toLowerCase();
+            const nameB = b.cells[0].innerText.toLowerCase();
+            return order === 'asc' ? nameA.localeCompare(nameB) : nameB.localeCompare(nameA);
+        });
+
+        rows.forEach(row => table.appendChild(row));
+    }
+</script>
 {% endblock %}

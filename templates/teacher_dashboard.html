@@ -42,42 +42,89 @@
 
         <div class="teacher-content">
 
-            <!-- Добавление студентов -->
-            <div class="add-student-section">
-                <h2>Добавить студента</h2>
-                <form method="POST" action="{{ url_for('main.add_student') }}">
-                    <div class="form-group">
-                        <label>Имя:</label>
-                        <input type="text" name="name" required>
+            <!-- Мои студенты (сворачиваемый блок) -->
+            <div class="students-section mt-3">
+                <div style="display: flex; justify-content: space-between; align-items: center; cursor: pointer;" onclick="toggleStudentsBlock()">
+                    <div>
+                        <h2 style="display: inline-block;">Мои студенты</h2>
+                        <span id="studentsArrow" style="font-size: 1.2rem; margin-left: 10px;">⬇️</span>
                     </div>
-                    <div class="form-group">
-                        <label>Email:</label>
-                        <input type="email" name="email" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Пароль:</label>
-                        <input type="password" name="password" required>
-                    </div>
-                    <button type="submit" class="btn">Добавить студента</button>
-                </form>
-            </div>
+                </div>
 
-            <!-- Список студентов -->
-            <div class="students-list">
-                <h2>Мои студенты</h2>
-                <ul>
-                    {% for student in students %}
-                    <li>
-                        {{ student.name }} ({{ student.email }})
-                        <form method="POST" action="{{ url_for('main.delete_student', student_id=student.id) }}" onsubmit="return confirm('Удалить этого студента?')">
-                            <button type="submit" class="btn-small">Удалить</button>
+                <div id="studentsBlock" style="display: block;">
+                    <!-- Фильтры -->
+                    <div class="filter-section mt-2">
+                        <button class="btn btn-small" onclick="toggleFilters(); event.stopPropagation();">🔍 Фильтры</button>
+                        <div id="filters" style="display: none; margin-top: 10px;">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="filter-name">Сортировать по имени:</label>
+                                    <select id="filter-name" onchange="sortTableByName()" class="form-input">
+                                        <option value="">—</option>
+                                        <option value="asc">А → Я</option>
+                                        <option value="desc">Я → А</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="filter-score">Сортировка по баллам:</label>
+                                    <select class="form-input" disabled>
+                                        <option>В разработке...</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Добавление студента -->
+                    <div id="addForm" class="add-student-section" style="display: none;">
+                        <form method="POST" action="{{ url_for('main.add_student') }}" class="student-form">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Имя:</label>
+                                    <input type="text" name="name" required class="form-input">
+                                </div>
+                                <div class="form-group">
+                                    <label>Email:</label>
+                                    <input type="email" name="email" required class="form-input">
+                                </div>
+                            </div>
+                            <button type="submit" class="btn btn-primary mt-1">Добавить</button>
                         </form>
-                    </li>
-                    {% endfor %}
-                </ul>
+                    </div>
+
+                    <!-- Таблица студентов -->
+                    <div class="students-table-container mt-2">
+                        <table class="students-table" id="studentsTable">
+                            <thead>
+                                <tr>
+                                    <th>Имя</th>
+                                    <th>Email</th>
+                                    <th>Группа</th>
+                                    <th>Средний балл</th>
+                                    <th>Действия</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for student in students %}
+                                <tr>
+                                    <td>{{ student.name }}</td>
+                                    <td>{{ student.email }}</td>
+                                    <td>—</td>
+                                    <td>—</td>
+                                    <td>
+                                        <form method="POST" action="{{ url_for('main.delete_student', student_id=student.id) }}" onsubmit="return confirm('Удалить?')">
+                                            <button type="submit" class="btn btn-danger btn-small">Удалить</button>
+                                        </form>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
 
-            <!-- Задания -->
+            <!-- Задания (сворачиваемый блок) -->
             <div class="assignments-section">
                 <div class="section-header" onclick="toggleDashboardAssignments()" style="cursor: pointer;">
                     <h2 style="display: inline-block;">Мои задания</h2>
@@ -108,7 +155,7 @@
     </main>
 
     <script>
-        // Профиль
+        // Выпадающее меню профиля
         document.querySelector('.profile-btn').addEventListener('click', function(e) {
             e.preventDefault();
             document.querySelector('.dropdown-content').classList.toggle('show');
@@ -127,7 +174,6 @@
         function toggleDashboardAssignments() {
             const section = document.getElementById('dashboardAssignments');
             const arrow = document.getElementById('arrow');
-
             if (!section.style.display || section.style.display === 'block') {
                 section.style.display = 'none';
                 arrow.textContent = '⬆️';
@@ -135,6 +181,44 @@
                 section.style.display = 'block';
                 arrow.textContent = '⬇️';
             }
+        }
+
+        // Сворачивание студентов
+        function toggleStudentsBlock() {
+            const block = document.getElementById('studentsBlock');
+            const arrow = document.getElementById('studentsArrow');
+            if (block.style.display === 'none') {
+                block.style.display = 'block';
+                arrow.textContent = '⬇️';
+            } else {
+                block.style.display = 'none';
+                arrow.textContent = '⬆️';
+            }
+        }
+
+        // Фильтры
+        function toggleFilters() {
+            const filters = document.getElementById('filters');
+            filters.style.display = filters.style.display === 'none' ? 'block' : 'none';
+        }
+
+        // Добавление студента
+        function toggleAddForm() {
+            const form = document.getElementById('addForm');
+            form.style.display = form.style.display === 'none' ? 'block' : 'none';
+        }
+
+        // Сортировка по имени
+        function sortTableByName() {
+            const table = document.getElementById("studentsTable").getElementsByTagName("tbody")[0];
+            const rows = Array.from(table.rows);
+            const order = document.getElementById("filter-name").value;
+            rows.sort((a, b) => {
+                const nameA = a.cells[0].innerText.toLowerCase();
+                const nameB = b.cells[0].innerText.toLowerCase();
+                return order === 'asc' ? nameA.localeCompare(nameB) : nameB.localeCompare(nameA);
+            });
+            rows.forEach(row => table.appendChild(row));
         }
     </script>
 </body>

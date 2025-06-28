@@ -49,31 +49,24 @@ def add_student():
     try:
         name = request.form.get('name', '').strip()
         email = request.form.get('email', '').strip().lower()
-        password = request.form.get('password', '')
-        
-        # Валидация данных
-        if not all([name, email, password]):
-            flash('Все поля обязательны для заполнения', 'error')
+        # Валидация
+        if not all([name, email]):
+            flash('Имя и email обязательны', 'error')
             return redirect(url_for('main.students'))
-            
-        if len(password) < 6:
-            flash('Пароль должен содержать минимум 6 символов', 'error')
+
+        # Ищем пользователя в базе
+        student = User.query.filter_by(email=email, role='student').first()
+
+        if not student:
+            flash('Пользователь с таким email не найден или он не является студентом', 'error')
             return redirect(url_for('main.students'))
-            
-        if User.query.filter_by(email=email).first():
-            flash('Пользователь с таким email уже существует', 'error')
-            return redirect(url_for('main.students'))
-            
-        new_student = User(
-            name=name,
-            email=email,
-            role='student',
-            password=generate_password_hash(password)
-        )
-        
-        db.session.add(new_student)
-        db.session.commit()
-        flash('Студент успешно добавлен', 'success')
+
+        # Обновим имя, если нужно
+        if student.name != name:
+            student.name = name
+            db.session.commit()
+
+        flash('Студент найден и добавлен в список', 'success')
         
     except Exception as e:
         db.session.rollback()
