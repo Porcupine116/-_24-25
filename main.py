@@ -40,14 +40,14 @@ def dashboard():
             score_filter=''
         )
     else:
-        # Для студента — задания только от его учителей
-        assignments = Assignment.query.filter(
-            Assignment.teacher_id.in_([t.id for t in current_user.teachers])
-        ).all()
-        scores = Score.query.filter_by(student_id=current_user.id).all()
+        assignments = Assignment.query.all()
+        my_submissions = Submission.query.filter_by(student_id=current_user.id).all()
+        submissions_by_assignment = {s.assignment_id: s for s in my_submissions}
+        for a in assignments:
+            a.submissions = [submissions_by_assignment[a.id]] if a.id in submissions_by_assignment else []
         return render_template('student_dashboard.html',
                                assignments=assignments,
-                               scores=scores,
+                               submissions=my_submissions,
                                current_user=current_user)
 
 
@@ -280,43 +280,45 @@ def grade_submission(submission_id):
 @main.route('/submit_assignment/<int:assignment_id>', methods=['GET', 'POST'])
 @login_required
 def submit_assignment(assignment_id):
-    """Сдача задания студентом"""
     if current_user.role != 'student':
         abort(403)
 
     assignment = Assignment.query.get_or_404(assignment_id)
 
     if request.method == 'POST':
-        # --- Если задание с тестом (есть вопросы) ---
-        if assignment.questions and len(assignment.questions) > 0:
-            answers = {}
-            for q in assignment.questions:
-                answer_id = request.form.get(f'question_{q.id}')
-                if not answer_id:
-                    flash(f'Пожалуйста, ответьте на вопрос: "{q.text}"', 'error')
-                    return redirect(url_for('main.submit_assignment', assignment_id=assignment.id))
-                answers[str(q.id)] = answer_id  # сохраняем id выбранного варианта
+        # Получаем ответы студента
+        student_answers = {}
+        for question in assignment.questions:
+            answer = request.form.get(f'question_{question.id}')
+            if answer:
+                student_answers[question.id] = int(answer)
 
-            # Сохраним ответы как JSON-строку
-            solution_text = json.dumps(answers, ensure_ascii=False)
+        # Автоматическая проверка
+        correct_count = 0
+        for question in assignment.questions:
+            correct_option = next((opt for opt in question.options if opt.is_correct), None)
+            if correct_option and student_answers.get(question.id) == correct_option.id:
+                correct_count += 1
 
+        # Баллы за задание (целое число)
+        if assignment.questions:
+            points_per_question = assignment.max_score // len(assignment.questions)
         else:
-            # --- Если обычное задание (текст) ---
-            solution_text = request.form.get('solution_text', '').strip()
-            if not solution_text:
-                flash('Решение не может быть пустым', 'error')
-                return redirect(url_for('main.submit_assignment', assignment_id=assignment.id))
+            points_per_question = assignment.max_score
+
+        score = correct_count * points_per_question
 
         try:
             submission = Submission(
                 student_id=current_user.id,
                 assignment_id=assignment.id,
-                solution_text=solution_text,
-                submitted_at=datetime.utcnow()
+                solution_text=str(student_answers),
+                submitted_at=datetime.utcnow(),
+                score=score    # <--- вот тут автоматом ставим!
             )
             db.session.add(submission)
             db.session.commit()
-            flash('Решение успешно отправлено', 'success')
+            flash(f'Решение отправлено! Вы набрали {score} баллов.', 'success')
         except Exception as e:
             db.session.rollback()
             flash(f'Ошибка при отправке решения: {str(e)}', 'error')
@@ -333,22 +335,24 @@ def profile():
     if request.method == 'POST':
         try:
             current_user.name = request.form.get('name', current_user.name)
+            current_user.last_name = request.form.get('last_name', current_user.last_name)
             current_user.email = request.form.get('email', current_user.email)
-            
+
+
             if request.form.get('password'):
                 if len(request.form.get('password')) < 6:
                     flash('Пароль должен содержать минимум 6 символов', 'error')
                 else:
                     current_user.password = generate_password_hash(request.form.get('password'))
-            
+
             db.session.commit()
             flash('Профиль успешно обновлен', 'success')
         except Exception as e:
             db.session.rollback()
             flash(f'Ошибка при обновлении профиля: {str(e)}', 'error')
-        
+
         return redirect(url_for('main.profile'))
-    
+
     return render_template('profile.html', user=current_user)
 
 @main.route('/statistics')
@@ -443,9 +447,11 @@ def assignments_list():
         assignments = Assignment.query.filter_by(teacher_id=current_user.id).order_by(Assignment.created_at.desc()).all()
         return render_template('assignments.html', assignments=assignments)
     elif current_user.role == 'student':
-        assignments = Assignment.query.filter(
-            Assignment.teacher_id.in_([t.id for t in current_user.teachers])
-        ).order_by(Assignment.created_at.desc()).all()
-        return render_template('student_assignments.html', assignments=assignments, now=datetime.utcnow())
+        assignments = Assignment.query.all()
+        my_submissions = Submission.query.filter_by(student_id=current_user.id).all()
+        submissions_by_assignment = {s.assignment_id: s for s in my_submissions}
+        for a in assignments:
+            a.submissions = [submissions_by_assignment[a.id]] if a.id in submissions_by_assignment else []
+        return render_template('student_assignments.html', assignments=assignments, current_user=current_user)
     else:
         abort(403)

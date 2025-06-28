@@ -2,6 +2,7 @@ from flask_login import UserMixin
 from datetime import datetime
 from app import db
 
+# Связка "учитель-студент"
 teacher_student = db.Table(
     'teacher_student',
     db.Column('teacher_id', db.Integer, db.ForeignKey('user.id')),
@@ -20,7 +21,7 @@ class User(UserMixin, db.Model):
     age = db.Column(db.Integer)
     gender = db.Column(db.String(10))  # 'male', 'female', 'other'
 
-    # Вот добавленная связь:
+    # связь с другими пользователями (студентами/учителями)
     students = db.relationship(
         'User',
         secondary=teacher_student,
@@ -38,6 +39,9 @@ class Assignment(db.Model):
     max_score = db.Column(db.Integer, default=10)
     teacher_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    submissions = db.relationship('Submission', backref='assignment', lazy=True)
+    # связь с вопросами:
+    questions = db.relationship('Question', backref='assignment', cascade='all, delete-orphan', lazy=True)
 
 class Submission(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -59,11 +63,11 @@ class Question(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     assignment_id = db.Column(db.Integer, db.ForeignKey('assignment.id'), nullable=False)
     text = db.Column(db.Text, nullable=False)
-    assignment = db.relationship('Assignment', backref=db.backref('questions', cascade='all, delete-orphan', lazy=True))
+    # связь с вариантами ответов:
+    options = db.relationship('AnswerOption', backref='question', cascade='all, delete-orphan', lazy=True)
 
 class AnswerOption(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     question_id = db.Column(db.Integer, db.ForeignKey('question.id'), nullable=False)
     text = db.Column(db.String(255), nullable=False)
     is_correct = db.Column(db.Boolean, default=False)
-    question = db.relationship('Question', backref=db.backref('options', cascade='all, delete-orphan', lazy=True))

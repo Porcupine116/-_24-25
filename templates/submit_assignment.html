@@ -1,45 +1,36 @@
 {% extends "base.html" %}
+
 {% block title %}Сдать задание{% endblock %}
 
 {% block content %}
-<div class="form-container" style="max-width: 540px; margin: 0 auto;">
-    <h1>Сдача задания</h1>
-
-    <div class="assignment-info-block">
-        <h2>{{ assignment.title }}</h2>
-        <p><b>Описание:</b> {{ assignment.description }}</p>
-        <p>
-            <b>Срок сдачи:</b>
-            {% if assignment.deadline %}
-                {{ assignment.deadline.strftime('%d.%m.%Y %H:%M') }}
-            {% else %}
-                Без срока
-            {% endif %}
+<div class="submit-assignment-container">
+    <h1 class="submit-title">Сдать задание: {{ assignment.title }}</h1>
+    <p class="assignment-description">{{ assignment.description }}</p>
+    {% if assignment.deadline %}
+        <p class="assignment-deadline">
+            Срок сдачи: {{ assignment.deadline.strftime('%d.%m.%Y %H:%M') }}
         </p>
-        <p><b>Максимальный балл:</b> {{ assignment.max_score }}</p>
-    </div>
+    {% endif %}
 
-    <form method="POST" class="submit-form">
-        {% if assignment.questions %}
-            {% for q in assignment.questions %}
-            <div class="question-block" style="margin-bottom:20px;">
-                <div><b>Вопрос {{ loop.index }}:</b> {{ q.text }}</div>
-                {% for opt in q.options %}
-                <div style="margin-left:18px;">
-                    <input type="radio" name="question_{{ q.id }}" value="{{ opt.id }}" id="q{{ q.id }}_opt{{ opt.id }}" required>
-                    <label for="q{{ q.id }}_opt{{ opt.id }}">{{ opt.text }}</label>
-                </div>
+    <form method="POST">
+        {% for question in assignment.questions %}
+            <div class="question-block">
+                <p><strong>{{ loop.index }}. {{ question.text }}</strong></p>
+                {% for option in question.options %}
+                    <label>
+                        <input type="radio"
+                               name="question_{{ question.id }}"
+                               value="{{ option.id }}"
+                               required>
+                        {{ option.text }}
+                    </label><br>
                 {% endfor %}
             </div>
-            {% endfor %}
-        {% else %}
-            <div class="form-group">
-                <label for="solution_text">Ваше решение:</label>
-                <textarea id="solution_text" name="solution_text" rows="8" required placeholder="Введите ваше решение здесь..." style="width: 100%;"></textarea>
-            </div>
-        {% endif %}
-        <button type="submit" class="btn btn-primary">Отправить</button>
-        <a href="{{ url_for('main.dashboard') }}" class="btn btn-small">Назад</a>
+            <hr>
+        {% endfor %}
+
+        <button type="submit" class="btn btn-primary mt-2">Отправить</button>
+        <a href="{{ url_for('main.dashboard') }}" class="btn btn-secondary mt-2">Назад</a>
     </form>
 </div>
 {% endblock %}

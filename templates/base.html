@@ -23,7 +23,7 @@
             <div class="nav-right">
                 {% if current_user.is_authenticated %}
                 <div class="profile-dropdown">
-                    <button class="nav-btn profile-btn">{{ current_user.name }}</button>
+                    <button class="nav-btn profile-btn">{{ current_user.name }}{% if current_user.last_name %} {{ current_user.last_name }}{% endif %}</button>
                     <div class="dropdown-content">
                         <a href="{{ url_for('main.profile') }}" class="dropdown-item">Профиль</a>
                         <a href="{{ url_for('main.logout') }}" class="dropdown-item">Выход</a>
