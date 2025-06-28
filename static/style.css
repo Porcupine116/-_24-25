@@ -515,3 +515,93 @@ body {
     max-width: 98vw;
   }
 }
+
+/* profile card */
+
+.profile-card {
+  max-width: 460px;
+  width: 100%;
+  margin: 60px auto 0 auto;
+  padding: 38px 34px 30px 34px;
+  background: white;
+  border-radius: 18px;
+  box-shadow: 0 4px 30px rgba(60,70,110,0.13);
+  box-sizing: border-box;
+}
+
+.profile-card h1 {
+  text-align: center;
+  margin-bottom: 2rem;
+  color: var(--primary-color);
+  font-size: 2rem;
+  letter-spacing: 0.03em;
+}
+
+.profile-form .form-row {
+  display: flex;
+  gap: 20px;
+}
+
+.profile-form .form-group {
+  flex: 1;
+  margin-bottom: 1.2rem;
+}
+
+.profile-form .form-group label {
+  display: block;
+  margin-bottom: 0.4rem;
+  font-weight: 600;
+  color: #394867;
+  font-size: 1rem;
+}
+
+.profile-form .form-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px 14px;
+  border-radius: 7px;
+  background: #f7f9fb;
+  border: 1px solid #d7e0ea;
+  font-size: 1rem;
+}
+
+.profile-form .form-hint {
+  font-size: 0.89rem;
+  color: #9fa8bb;
+  margin-top: 2px;
+  display: block;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 2rem;
+  gap: 15px;
+}
+
+.btn-secondary {
+  background: #eee;
+  color: #444;
+  border: none;
+}
+
+.btn-secondary:hover {
+  background: #d4d4d4;
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+  .profile-card {
+    padding: 22px 6px 18px 6px;
+    max-width: 99vw;
+  }
+  .profile-form .form-row {
+    flex-direction: column;
+    gap: 0;
+  }
+  .form-actions {
+    flex-direction: column;
+    gap: 10px;
+  }
+}

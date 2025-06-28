@@ -5,7 +5,7 @@
 {% block content %}
 <div class="dashboard-container">
     <h1 class="welcome-title">Добро пожаловать, {{ current_user.name }}!</h1>
-    
+
     {% with messages = get_flashed_messages() %}
         {% if messages %}
             <div class="flashes">
@@ -16,9 +16,23 @@
         {% endif %}
     {% endwith %}
 
+    <!-- Блок прогресса -->
+    <div class="student-progress-block">
+        <span>Всего заданий: <b>{{ assignments|length }}</b></span>
+        <span>Сдано: <b>{{ scores|length }}</b></span>
+        <span>
+            Средний балл: <b>
+            {% if scores %}
+                {{ (scores | map(attribute='score') | sum) // (scores|length) }}
+            {% else %}
+                —
+            {% endif %}
+            </b>
+        </span>
+    </div>
+
     <div class="assignments-section">
         <h2 class="section-title">Мои задания</h2>
-        
         <div class="assignments-grid">
             {% for assignment in assignments %}
             <div class="assignment-card">
@@ -32,26 +46,23 @@
                         {% endif %}
                     </span>
                 </div>
-                
-                <p class="assignment-topic">{{ assignment.topic }}</p>
                 <p class="assignment-description">{{ assignment.description }}</p>
-                
                 <div class="assignment-status">
                     {% set student_score = scores|selectattr('assignment_id', 'equalto', assignment.id)|first %}
                     {% if student_score %}
                         <div class="score submitted">
+                            <span style="color:#339933;">Сдано</span> |
                             Ваша оценка: <strong>{{ student_score.score }}/{{ assignment.max_score }}</strong>
                         </div>
+                        <a href="{{ url_for('main.submit_assignment', assignment_id=assignment.id) }}"
+                            class="btn btn-small">Изменить решение</a>
                     {% else %}
                         <div class="score not-submitted">
-                            Работа не сдана
+                            <span style="color:#c23c2a;">Не сдано</span>
                         </div>
+                        <a href="{{ url_for('main.submit_assignment', assignment_id=assignment.id) }}"
+                            class="btn btn-small btn-primary">Сдать работу</a>
                     {% endif %}
-                    
-                    <a href="{{ url_for('main.submit_assignment', assignment_id=assignment.id) }}" 
-                       class="btn btn-small">
-                        {{ 'Изменить решение' if student_score else 'Сдать работу' }}
-                    </a>
                 </div>
             </div>
             {% else %}

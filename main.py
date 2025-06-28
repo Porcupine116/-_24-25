@@ -4,6 +4,9 @@ from app import db
 from models import User, Assignment, Score, Submission, Question, AnswerOption
 from datetime import datetime
 from werkzeug.security import generate_password_hash
+from datetime import datetime
+from flask import jsonify
+import json
 
 main = Blueprint('main', __name__)
 
@@ -17,89 +20,134 @@ def dashboard():
     if current_user.role == 'teacher':
         students = User.query.filter_by(role='student').all()
         assignments = Assignment.query.filter_by(teacher_id=current_user.id).all()
-        return render_template('teacher_dashboard.html', 
-                            students=students,
-                            assignments=assignments,
-                            current_user=current_user)
+
+        # ——— ВЫЧИСЛЯЕМ avg_scores:
+        avg_scores = {}
+        for student in students:
+            submissions = Submission.query.filter_by(student_id=student.id).all()
+            scores = [s.score for s in submissions if s.score is not None]
+            avg_scores[student.id] = round(sum(scores) / len(scores), 2) if scores else None
+
+        # ——— Передаем avg_scores в шаблон!
+        return render_template(
+            'teacher_dashboard.html',
+            students=students,
+            assignments=assignments,
+            avg_scores=avg_scores,  # <——— вот оно!
+            current_user=current_user,
+            all_groups=[],           # если используешь фильтрацию по группам, передай актуально
+            group_filter='',
+            score_filter=''
+        )
     else:
-        assignments = Assignment.query.all()
+        # Для студента — задания только от его учителей
+        assignments = Assignment.query.filter(
+            Assignment.teacher_id.in_([t.id for t in current_user.teachers])
+        ).all()
         scores = Score.query.filter_by(student_id=current_user.id).all()
-        return render_template('student_dashboard.html', 
-                             assignments=assignments, 
-                             scores=scores,
-                             current_user=current_user)
+        return render_template('student_dashboard.html',
+                               assignments=assignments,
+                               scores=scores,
+                               current_user=current_user)
+
 
 @main.route('/students')
 @login_required
 def students():
-    """Страница управления студентами (только для учителей)"""
     if current_user.role != 'teacher':
         abort(403)
-    
-    students = User.query.filter_by(role='student').order_by(User.name.asc()).all()
-    return render_template('students.html', students=students)
+
+    # Фильтры из GET-параметров
+    group_filter = request.args.get('group', '').strip()
+    score_filter = request.args.get('score', '')
+
+    students_query = current_user.students.order_by(User.name.asc())
+
+    # Применяем фильтр по группе, если выбран
+    if group_filter:
+        students_query = students_query.filter_by(group=group_filter)
+
+    students = students_query.all()
+
+    # Для выпадающего списка групп:
+    all_groups = [g[0] for g in db.session.query(User.group).distinct() if g[0]]
+
+    # Для фильтра по среднему баллу (готовим словарь student_id: avg_score)
+    avg_scores = {}
+    for student in students:
+        submissions = Submission.query.filter_by(student_id=student.id).all()
+        scores = [s.score for s in submissions if s.score is not None]
+        avg_scores[student.id] = round(sum(scores) / len(scores), 2) if scores else 0
+
+    # Фильтрация по среднему баллу (например: ">=80", "<50")
+    if score_filter:
+        op = score_filter[0]
+        try:
+            value = float(score_filter[1:])
+            if op == '>':
+                students = [s for s in students if avg_scores.get(s.id, 0) > value]
+            elif op == '<':
+                students = [s for s in students if avg_scores.get(s.id, 0) < value]
+            elif op == '=':
+                students = [s for s in students if avg_scores.get(s.id, 0) == value]
+        except Exception:
+            pass
+
+    return render_template('students.html', students=students, all_groups=all_groups, avg_scores=avg_scores,
+                           group_filter=group_filter, score_filter=score_filter)
+
 
 @main.route('/students/add', methods=['POST'])
 @login_required
 def add_student():
-    """Добавление нового студента"""
     if current_user.role != 'teacher':
         abort(403)
-    
     try:
         name = request.form.get('name', '').strip()
         email = request.form.get('email', '').strip().lower()
-        # Валидация
         if not all([name, email]):
             flash('Имя и email обязательны', 'error')
             return redirect(url_for('main.students'))
-
-        # Ищем пользователя в базе
         student = User.query.filter_by(email=email, role='student').first()
-
         if not student:
             flash('Пользователь с таким email не найден или он не является студентом', 'error')
             return redirect(url_for('main.students'))
-
-        # Обновим имя, если нужно
+        if student in current_user.students:
+            flash('Студент уже добавлен к вам', 'warning')
+        else:
+            current_user.students.append(student)
+            db.session.commit()
+            flash('Студент успешно добавлен!', 'success')
+        # Обновим имя, если что
         if student.name != name:
             student.name = name
             db.session.commit()
-
-        flash('Студент найден и добавлен в список', 'success')
-        
     except Exception as e:
         db.session.rollback()
         flash(f'Ошибка при добавлении студента: {str(e)}', 'error')
-    
     return redirect(url_for('main.students'))
 
 @main.route('/students/<int:student_id>/delete', methods=['POST'])
 @login_required
 def delete_student(student_id):
-    """Удаление студента"""
     if current_user.role != 'teacher':
         abort(403)
-    
     try:
         student = User.query.get_or_404(student_id)
         if student.role != 'student':
             flash('Нельзя удалить пользователя с другой ролью', 'error')
             return redirect(url_for('main.students'))
-            
-        # Удаляем все связанные данные студента
-        Score.query.filter_by(student_id=student_id).delete()
-        Submission.query.filter_by(student_id=student_id).delete()
-        
-        db.session.delete(student)
-        db.session.commit()
-        flash('Студент успешно удален', 'success')
-        
+        if student in current_user.students:
+            current_user.students.remove(student)
+            db.session.commit()
+            flash('Студент удалён из вашей группы', 'success')
+        else:
+            flash('Этот студент не прикреплён к вам', 'warning')
     except Exception as e:
         db.session.rollback()
         flash(f'Ошибка при удалении студента: {str(e)}', 'error')
-    
     return redirect(url_for('main.students'))
+
 
 @main.route('/assignments/create', methods=['GET', 'POST'])
 @login_required
@@ -228,35 +276,55 @@ def grade_submission(submission_id):
     
     return redirect(url_for('main.view_submissions', assignment_id=assignment.id))
 
-@main.route('/submit_assignment/<int:assignment_id>', methods=['POST'])
+
+@main.route('/submit_assignment/<int:assignment_id>', methods=['GET', 'POST'])
 @login_required
 def submit_assignment(assignment_id):
     """Сдача задания студентом"""
     if current_user.role != 'student':
         abort(403)
-    
+
     assignment = Assignment.query.get_or_404(assignment_id)
-    solution_text = request.form.get('solution_text', '')
-    
-    if not solution_text:
-        flash('Решение не может быть пустым', 'error')
+
+    if request.method == 'POST':
+        # --- Если задание с тестом (есть вопросы) ---
+        if assignment.questions and len(assignment.questions) > 0:
+            answers = {}
+            for q in assignment.questions:
+                answer_id = request.form.get(f'question_{q.id}')
+                if not answer_id:
+                    flash(f'Пожалуйста, ответьте на вопрос: "{q.text}"', 'error')
+                    return redirect(url_for('main.submit_assignment', assignment_id=assignment.id))
+                answers[str(q.id)] = answer_id  # сохраняем id выбранного варианта
+
+            # Сохраним ответы как JSON-строку
+            solution_text = json.dumps(answers, ensure_ascii=False)
+
+        else:
+            # --- Если обычное задание (текст) ---
+            solution_text = request.form.get('solution_text', '').strip()
+            if not solution_text:
+                flash('Решение не может быть пустым', 'error')
+                return redirect(url_for('main.submit_assignment', assignment_id=assignment.id))
+
+        try:
+            submission = Submission(
+                student_id=current_user.id,
+                assignment_id=assignment.id,
+                solution_text=solution_text,
+                submitted_at=datetime.utcnow()
+            )
+            db.session.add(submission)
+            db.session.commit()
+            flash('Решение успешно отправлено', 'success')
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Ошибка при отправке решения: {str(e)}', 'error')
         return redirect(url_for('main.dashboard'))
-    
-    try:
-        submission = Submission(
-            student_id=current_user.id,
-            assignment_id=assignment.id,
-            solution_text=solution_text,
-            submitted_at=datetime.utcnow()
-        )
-        db.session.add(submission)
-        db.session.commit()
-        flash('Решение успешно отправлено', 'success')
-    except Exception as e:
-        db.session.rollback()
-        flash(f'Ошибка при отправке решения: {str(e)}', 'error')
-    
-    return redirect(url_for('main.dashboard'))
+
+    # Для GET — показываем форму сдачи
+    return render_template('submit_assignment.html', assignment=assignment)
+
 
 @main.route('/profile', methods=['GET', 'POST'])
 @login_required
@@ -371,7 +439,13 @@ def logout():
 @main.route('/assignments')
 @login_required
 def assignments_list():
-    if current_user.role != 'teacher':
+    if current_user.role == 'teacher':
+        assignments = Assignment.query.filter_by(teacher_id=current_user.id).order_by(Assignment.created_at.desc()).all()
+        return render_template('assignments.html', assignments=assignments)
+    elif current_user.role == 'student':
+        assignments = Assignment.query.filter(
+            Assignment.teacher_id.in_([t.id for t in current_user.teachers])
+        ).order_by(Assignment.created_at.desc()).all()
+        return render_template('student_assignments.html', assignments=assignments, now=datetime.utcnow())
+    else:
         abort(403)
-    assignments = Assignment.query.filter_by(teacher_id=current_user.id).order_by(Assignment.created_at.desc()).all()
-    return render_template('assignments.html', assignments=assignments)

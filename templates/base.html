@@ -15,7 +15,7 @@
                     {% if current_user.role == 'teacher' %}
                         <a href="{{ url_for('main.create_assignment') }}" class="nav-btn">Задания</a>
                     {% else %}
-                        <a href="{{ url_for('main.view_assignments') }}" class="nav-btn">Задания</a>
+                        <a href="{{ url_for('main.assignments_list') }}" class="nav-btn">Задания</a>
                     {% endif %}
                     <a href="{{ url_for('main.statistics') }}" class="nav-btn">Статистика</a>
                 {% endif %}

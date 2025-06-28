@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}Мои задания{% endblock %}
+
+{% block content %}
+<div class="form-container">
+    <h1>Мои задания</h1>
+    {% if not assignments %}
+        <div class="info-block">Пока нет доступных заданий.<br>Если вы считаете, что это ошибка, обратитесь к своему преподавателю.</div>
+    {% else %}
+        <div class="assignments-grid">
+            {% for assignment in assignments %}
+            {% set my_submission = assignment.submissions | selectattr('student_id', 'equalto', current_user.id) | first %}
+            <div class="assignment-card">
+                <div class="card-header">
+                    <h3>{{ assignment.title }}</h3>
+                    <span class="score-label">макс: {{ assignment.max_score }} баллов</span>
+                </div>
+                <p class="assignment-description">{{ assignment.description }}</p>
+                <div class="assignment-meta">
+                    <span class="deadline">📅 {{ assignment.deadline.strftime('%d.%m.%Y %H:%M') if assignment.deadline else 'Без срока' }}</span>
+                    <span class="created-at">🕒 {{ assignment.created_at.strftime('%d.%m.%Y') }}</span>
+                </div>
+
+                <div class="assignment-actions">
+                    {% if my_submission %}
+                        <span class="status-done">✅ Сдано</span>
+                        <span>Оценка: {{ my_submission.score if my_submission.score is not none else "ожидает проверки" }}</span>
+                        <a href="#" onclick="showSubmissionDetails({{ my_submission.id }}); return false;" class="btn btn-small">Подробнее</a>
+                    {% elif assignment.deadline and assignment.deadline < now %}
+                        <span class="status-late">⏰ Просрочено</span>
+                        <a href="{{ url_for('main.submit_assignment', assignment_id=assignment.id) }}" class="btn btn-small btn-primary">Сдать всё равно</a>
+                    {% else %}
+                        <a href="{{ url_for('main.submit_assignment', assignment_id=assignment.id) }}" class="btn btn-small btn-primary">Сдать задание</a>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+</div>
+
+<!-- Модальное окно для подробностей о сдаче (заглушка) -->
+<div id="submissionModal" class="modal" style="display:none;">
+    <div class="modal-content">
+        <span class="close" onclick="closeSubmissionModal()">&times;</span>
+        <div id="submissionDetails"></div>
+    </div>
+</div>
+
+<script>
+function now() {
+    return new Date();
+}
+
+function showSubmissionDetails(submissionId) {
+    // Здесь можно через AJAX подгрузить детали сдачи, но пока просто выводим id
+    document.getElementById('submissionDetails').innerHTML = 'ID работы: ' + submissionId + '<br>Здесь будут подробности.';
+    document.getElementById('submissionModal').style.display = 'block';
+}
+function closeSubmissionModal() {
+    document.getElementById('submissionModal').style.display = 'none';
+}
+</script>
+{% endblock %}

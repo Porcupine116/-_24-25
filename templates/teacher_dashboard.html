@@ -49,31 +49,36 @@
                         <h2 style="display: inline-block;">Мои студенты</h2>
                         <span id="studentsArrow" style="font-size: 1.2rem; margin-left: 10px;">⬇️</span>
                     </div>
+                    <button class="btn btn-primary" onclick="event.stopPropagation(); toggleAddForm();">➕ Добавить</button>
                 </div>
 
                 <div id="studentsBlock" style="display: block;">
                     <!-- Фильтры -->
-                    <div class="filter-section mt-2">
-                        <button class="btn btn-small" onclick="toggleFilters(); event.stopPropagation();">🔍 Фильтры</button>
-                        <div id="filters" style="display: none; margin-top: 10px;">
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label for="filter-name">Сортировать по имени:</label>
-                                    <select id="filter-name" onchange="sortTableByName()" class="form-input">
-                                        <option value="">—</option>
-                                        <option value="asc">А → Я</option>
-                                        <option value="desc">Я → А</option>
-                                    </select>
-                                </div>
-                                <div class="form-group">
-                                    <label for="filter-score">Сортировка по баллам:</label>
-                                    <select class="form-input" disabled>
-                                        <option>В разработке...</option>
-                                    </select>
-                                </div>
-                            </div>
+                    <form method="get" class="filter-section" style="display: flex; gap: 15px; align-items: flex-end; margin: 18px 0 15px 0;">
+                        <div>
+                            <label for="group">Группа:</label>
+                            <select name="group" id="group" class="form-input" onchange="this.form.submit()">
+                                <option value="">Все группы</option>
+                                {% for group in all_groups %}
+                                    <option value="{{ group }}" {% if group_filter==group %}selected{% endif %}>{{ group }}</option>
+                                {% endfor %}
+                            </select>
                         </div>
-                    </div>
+                        <div>
+                            <label for="score">Средний балл:</label>
+                            <select name="score" id="score" class="form-input" onchange="this.form.submit()">
+                                <option value="">Все</option>
+                                <option value=">90" {% if score_filter=='>90' %}selected{% endif %}>&gt; 90</option>
+                                <option value=">75" {% if score_filter=='>75' %}selected{% endif %}>&gt; 75</option>
+                                <option value=">60" {% if score_filter=='>60' %}selected{% endif %}>&gt; 60</option>
+                                <option value="<50" {% if score_filter=='<50' %}selected{% endif %}>&lt; 50</option>
+                                <option value="=100" {% if score_filter=='=100' %}selected{% endif %}>= 100</option>
+                            </select>
+                        </div>
+                        {% if group_filter or score_filter %}
+                        <a href="{{ url_for('main.dashboard') }}" class="btn btn-small" style="margin-bottom: 2px;">Сбросить</a>
+                        {% endif %}
+                    </form>
 
                     <!-- Добавление студента -->
                     <div id="addForm" class="add-student-section" style="display: none;">
@@ -109,10 +114,16 @@
                                 <tr>
                                     <td>{{ student.name }}</td>
                                     <td>{{ student.email }}</td>
-                                    <td>{{ student.group }}</td>
-                                    <td>—</td>
+                                    <td>{{ student.group if student.group else '—' }}</td>
                                     <td>
-                                        <form method="POST" action="{{ url_for('main.delete_student', student_id=student.id) }}" onsubmit="return confirm('Удалить?')">
+                                        {% if avg_scores[student.id] is not none %}
+                                            {{ avg_scores[student.id] }}
+                                        {% else %}
+                                            —
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <form method="POST" action="{{ url_for('main.delete_student', student_id=student.id) }}" onsubmit="return confirm('Удалить этого студента?');">
                                             <button type="submit" class="btn btn-danger btn-small">Удалить</button>
                                         </form>
                                     </td>
@@ -120,17 +131,21 @@
                                 {% endfor %}
                             </tbody>
                         </table>
+                        {% if not students %}
+                        <div class="info-block" style="margin-top:20px;">
+                            Нет студентов по выбранным фильтрам.
+                        </div>
+                        {% endif %}
                     </div>
                 </div>
             </div>
 
-            <!-- Задания (сворачиваемый блок) -->
+            <!-- Задания (сворачиваемый блок, без изменений) -->
             <div class="assignments-section">
                 <div class="section-header" onclick="toggleDashboardAssignments()" style="cursor: pointer;">
                     <h2 style="display: inline-block;">Мои задания</h2>
                     <span id="arrow" style="font-size: 1.2rem; margin-left: 10px;">⬇️</span>
                 </div>
-
                 <div id="dashboardAssignments" class="assignments-list mt-2" style="display: block;">
                     {% for assignment in assignments %}
                     <div class="assignment-card">
@@ -196,29 +211,10 @@
             }
         }
 
-        // Фильтры
-        function toggleFilters() {
-            const filters = document.getElementById('filters');
-            filters.style.display = filters.style.display === 'none' ? 'block' : 'none';
-        }
-
         // Добавление студента
         function toggleAddForm() {
             const form = document.getElementById('addForm');
             form.style.display = form.style.display === 'none' ? 'block' : 'none';
-        }
-
-        // Сортировка по имени
-        function sortTableByName() {
-            const table = document.getElementById("studentsTable").getElementsByTagName("tbody")[0];
-            const rows = Array.from(table.rows);
-            const order = document.getElementById("filter-name").value;
-            rows.sort((a, b) => {
-                const nameA = a.cells[0].innerText.toLowerCase();
-                const nameB = b.cells[0].innerText.toLowerCase();
-                return order === 'asc' ? nameA.localeCompare(nameB) : nameB.localeCompare(nameA);
-            });
-            rows.forEach(row => table.appendChild(row));
         }
     </script>
 </body>
