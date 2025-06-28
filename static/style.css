@@ -652,12 +652,3 @@ body {
     max-width: 100vw;
   }
 }
-
-.assignment-header .score-label {
-    margin-left: 1rem;
-    font-size: 1.1rem;
-    font-weight: bold;
-}
-.assignment-card .score.submitted { color: #339933; }
-.assignment-card .score.not-submitted { color: #c23c2a; }
-.assignment-card .score.waiting { color: #d98e1f; }

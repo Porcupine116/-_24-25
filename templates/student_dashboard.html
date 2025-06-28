@@ -5,7 +5,7 @@
 {% block content %}
 <div class="student-dashboard">
     <div class="dashboard-container">
-        <h1 class="welcome-title">Добро пожаловать, {{ current_user.name }}!</h1>
+        <h1 class="welcome-title">Добро пожаловать, {{ current_user.name }} {{ current_user.last_name }}!</h1>
 
         {% with messages = get_flashed_messages() %}
             {% if messages %}
